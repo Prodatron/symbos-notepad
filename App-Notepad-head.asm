@@ -36,17 +36,17 @@ prgpstmem       equ 48          ;additional memory areas; 8 memory areas can be 
 prgpstnum       equ 88          ;Application ID
 prgpstprz       equ 89          ;Main process ID
 
-prgcodbeg   dw prgdatbeg-prgcodbeg  ;length of code area
-            dw prgtrnbeg-prgdatbeg  ;length of data area
-            dw prgtrnend-prgtrnbeg  ;length of transfer area
+App_BegCode dw App_BegData-App_BegCode  ;length of code area
+            dw App_BegTrns-App_BegData  ;length of data area
+            dw App_EndTrns-App_BegTrns  ;length of transfer area
 prgdatadr   dw #1000                ;original origin                    POST address data area
 prgtrnadr   dw relocate_count       ;number of relocator table entries  POST address transfer area
-prgprztab   dw prgstk-prgtrnbeg     ;stack length                       POST table processes
+prgprztab   dw prgstk-App_BegTrns     ;stack length                       POST table processes
             dw 0                    ;*reserved*
-prgbnknum   db 0                    ;*reserved*                         POST bank number
+App_BnkNum  db 0                    ;*reserved*                         POST bank number
             db "Notepad":ds 32-7-8:db 0 ;Name
             db 1                    ;flags (+1=16c icon)
-            dw prgicn16c-prgcodbeg  ;16 colour icon offset
+            dw prgicn16c-App_BegCode  ;16 colour icon offset
             ds 5                    ;*reserved*
 prgmemtab   db "SymExe10"           ;SymbOS-EXE-identifier              POST table reserved memory areas
             dw 0                    ;additional code memory

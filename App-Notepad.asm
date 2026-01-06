@@ -89,12 +89,13 @@ prgwin      db 0    ;main     window ID
 diawin      db 0    ;dialogue window ID
 windatsup   equ 51
 
-prgprz  call prgpar
+prgprz  call prglng
+        call prgpar
         call cfglod
         call cfgini
         call SySystem_HLPINI
 
-        ld a,(prgbnknum)
+        ld a,(App_BnkNum)
         ld de,prgwindat
         call SyDesktop_WINOPN
         jp c,prgend             ;memory full -> quit process
@@ -175,14 +176,14 @@ prginf  ld hl,prgtxtinf         ;*** info box
         ld b,1+128+64
 prginf1 call prginf0
         jp prgprz0
-prginf0 ld a,(prgbnknum)
+prginf0 ld a,(App_BnkNum)
         ld de,prgwindat
         jp SySystem_SYSWRN
 
 ;### PRGEND -> quit application
 prgend0 call filmod
         jp c,prgprz0
-prgend  ld hl,(prgcodbeg+prgpstnum)
+prgend  ld hl,(App_BegCode+prgpstnum)
         call SySystem_PRGEND
 prgend1 rst #30                     ;wait for death
         jr prgend1
@@ -190,8 +191,8 @@ prgend1 rst #30                     ;wait for death
 ;### PRGPAR -> Search for command line parameter (textfile)
 prgparf db 0                    ;flag, if command line parameter exists
 
-prgpar  ld hl,(prgcodbeg)       ;search for command line parameter
-        ld de,prgcodbeg
+prgpar  ld hl,(App_BegCode)       ;search for command line parameter
+        ld de,App_BegCode
         dec h
         add hl,de               ;HL=code area end=path
         ld b,255
@@ -212,6 +213,19 @@ prgpar2 ld (hl),0
         ldir
 prgpar3 ret
 
+;### PRGLNG -> load language pack
+prglng  ld hl,(App_BegCode)
+        ld de,App_BegCode
+        dec h
+        add hl,de               ;HL=code area end=path
+        ex de,hl
+        ld a,(App_BnkNum)
+        ld c,a
+        ld hl,texts_int
+        ld ix,256*0+9           ;default language=9 (english), pack=0
+        ld iyl,0                ;language-file version 0
+        jp SySystem_LNGLOD
+
 
 ;==============================================================================
 ;### SUB-ROUTINES #############################################################
@@ -223,7 +237,7 @@ diacnc  ld a,(diawin)
         jp prgprz0
 
 ;### MSGGET -> check for message for application
-;### Output     CF=0 -> no message, CF=1 -> IXH=sender, (AppMsgB)=message, A=(AppMsgB+0), IY=AppMsgB
+;### Output     CF=0 -> no message, CF=1 -> IXH=sender, (App_MsgBuf)=message, A=(App_MsgBuf+0), IY=App_MsgBuf
 msgget  call msgget2            ;** sleep
         rst #08
         jr msgget1
@@ -232,7 +246,7 @@ msgget0 call msgget2            ;** no sleep
 msgget1 or a
         db #dd:dec l
         ret nz
-        ld iy,AppMsgB
+        ld iy,App_MsgBuf
         ld a,(iy+0)
         or a
         jp z,prgend
@@ -241,7 +255,7 @@ msgget1 or a
 msgget2 ld a,(AppPrzN)
         db #dd:ld l,a           ;IXL=our own process ID
         db #dd:ld h,-1          ;IYL=sender ID (-1 = receive messages from any sender)
-        ld iy,AppMsgB           ;IY=Messagebuffer
+        ld iy,App_MsgBuf           ;IY=Messagebuffer
         ret
 
 ;### CLCDEZ -> Converts byte into 2 decimal digits
@@ -346,8 +360,8 @@ SySystem_HLPPTH1 ds 128
 SySHInX db ".HLP",0
 
 SySystem_HLPINI
-        ld hl,(prgcodbeg)
-        ld de,prgcodbeg
+        ld hl,(App_BegCode)
+        ld de,App_BegCode
         dec h
         add hl,de                   ;HL = CodeEnd = Command line
         ld de,SySystem_HLPPTH1
@@ -385,7 +399,7 @@ SySystem_HLPOPN
         or a
         ret z
         ld hl,SySystem_HLPPTH
-        ld a,(prgbnknum)
+        ld a,(App_BnkNum)
         jp SySystem_PRGRUN
 
 
@@ -397,8 +411,8 @@ cfgnam  db "notepad.dat",0:cfgnam0
 cfgpth  dw 0
 
 ;### CFGGET -> Generates config path
-cfgget  ld hl,(prgcodbeg)
-        ld de,prgcodbeg
+cfgget  ld hl,(App_BegCode)
+        ld de,App_BegCode
         dec h
         add hl,de           ;HL = CodeEnd = path
         ld (cfgpth),hl
@@ -438,7 +452,7 @@ cfgget5 ld a,(hl)
 ;### CFGLOD -> Loads config
 cfglod  call cfgget
         ld hl,(cfgpth)
-        ld a,(prgbnknum)
+        ld a,(App_BnkNum)
         db #dd:ld h,a
         call SySystem_CallFunction
         db MSC_SYS_SYSFIL
@@ -446,7 +460,7 @@ cfglod  call cfgget
         ret c
         ld hl,cfgdat
         ld bc,16+128
-        ld de,(prgbnknum)
+        ld de,(App_BnkNum)
         push af
         call SySystem_CallFunction
         db MSC_SYS_SYSFIL
@@ -525,7 +539,7 @@ cfgfnt  ld hl,txtmulobj+texdatflg
         jr z,cfgfnt1
         push af
         ld hl,(cfgpth)
-        ld a,(prgbnknum)
+        ld a,(App_BnkNum)
         db #dd:ld h,a
         call SySystem_CallFunction
         db MSC_SYS_SYSFIL
@@ -556,7 +570,7 @@ cfgfnt  ld hl,txtmulobj+texdatflg
         add hl,bc
         ld (txtmulobj+texdatfnt),hl
         ld bc,96*16+2
-        ld a,(prgbnknum)
+        ld a,(App_BnkNum)
         ld e,a
         ld a,(cfgfntcpr)
         rra
@@ -581,14 +595,14 @@ cfgfnt1 ld hl,txtmulobj+texdatflg
 
 ;### CFGSAV -> Save config
 cfgsav  ld hl,(cfgpth)      ;open config file
-        ld a,(prgbnknum)
+        ld a,(App_BnkNum)
         db #dd:ld h,a
         xor a
         call SySystem_CallFunction
         db MSC_SYS_SYSFIL
         db FNC_FIL_FILOPN
         ret c
-        ld de,(prgbnknum)   ;save config
+        ld de,(App_BnkNum)   ;save config
         ld hl,cfgdat
         ld bc,16
         push af
@@ -634,7 +648,7 @@ cfgopn2 res 7,(hl)
         ld (penselobj+12),a
         call cfgcol0
         ld de,cfgwindat
-cfgopn0 ld a,(prgbnknum)
+cfgopn0 ld a,(App_BnkNum)
         call SyDesktop_WINOPN
         jp c,prgprz0            ;memory full -> ignore
         ld (diawin),a           ;window has been opened -> store ID
@@ -782,7 +796,7 @@ filopn  call filmod
         or a
         call z,fillod
         jp prgprz0
-filopn0 ld hl,prgbnknum
+filopn0 ld hl,App_BnkNum
         add (hl)
         ld hl,docmsk
         ld c,8
@@ -816,7 +830,7 @@ filsav2 call filsto
 fillode dw prgtxterr1,prgtxterr2,prgtxterr3,prgtxterr4
 
 fillod  ld hl,docpth
-        ld a,(prgbnknum)
+        ld a,(App_BnkNum)
         db #dd:ld h,a
         call SySystem_CallFunction
         db MSC_SYS_SYSFIL
@@ -829,7 +843,7 @@ fillod  ld hl,docpth
         add hl,bc
         ld (hl),0
         sbc hl,bc
-        ld de,(prgbnknum)
+        ld de,(App_BnkNum)
         call SySystem_CallFunction
         db MSC_SYS_SYSFIL
         db FNC_FIL_FILINP           ;load textdata
@@ -877,7 +891,7 @@ fillod5 inc e:dec e
 filsto  ld hl,txtmulobj+texdatflg   ;reset modified-bit
         res 7,(hl)
         ld hl,docpth
-        ld a,(prgbnknum)
+        ld a,(App_BnkNum)
         db #dd:ld h,a
         xor a
         call SySystem_CallFunction
@@ -893,7 +907,7 @@ filsto  ld hl,txtmulobj+texdatflg   ;reset modified-bit
         push hl
         sbc hl,bc
         inc bc
-        ld de,(prgbnknum)
+        ld de,(App_BnkNum)
         call SySystem_CallFunction
         db MSC_SYS_SYSFIL
         db FNC_FIL_FILOUT           ;save textdata
@@ -950,7 +964,6 @@ filtit3 ld c,a
 ;==============================================================================
 
 ;### EDTCHG -> Editor changed
-edtchgm db "Lin Col Siz Mrk "
 edtchgf db 0    ;flag, if changed
 
 edtchg  ld a,1                  ;** Set Change-Flag
@@ -964,14 +977,15 @@ edtchg0 ld hl,edtchgf           ;** Update only on change
 edtchg1 ld a,(prgwindat+1)      ;** Update only on view
         bit 6,a
         ret z
+
         call edtchg5
         ld a,(prgwin)
         jp SyDesktop_WINSTA
-edtchg5 ld a,29                 ;** Update content
+edtchg5 ld a,248                ;** Update content
         rst #20:dw jmp_keyput
         rst #30
         ld iy,prgwinsta
-        ld hl,edtchgm
+        ld hl,(edtchgm_poi+1)
         ld ix,(txtmulobj+texdatmsg+2)
         inc ix
         call edtchg4
@@ -1100,7 +1114,7 @@ edttim1 ld hl,(txtmulobj+texdatlen)     ;increase length
         ld (txtmulobj+texdatmsg+0),hl   ;update display
         ld hl,0
         ld (txtmulobj+texdatmrk),hl
-        ld a,30
+        ld a,249
         rst #20:dw jmp_keyput
         jp prgprz0
 
@@ -1192,7 +1206,7 @@ fndrdr  call fndrok0
         push hl
         ld hl,0
         ld (txtmulobj+texdatmrk),hl
-        ld a,30
+        ld a,249
         rst #20:dw jmp_keyput
         rst #30
         pop hl
@@ -1267,7 +1281,7 @@ fndfnx2 ld de,(fnddatofn+texdatlen)
         ld a,d:cpl:ld d,a
         inc de
         ld (txtmulobj+texdatmsg+2),de
-        ld a,31
+        ld a,250
         rst #20:dw jmp_keyput
         ret
 
@@ -1534,7 +1548,7 @@ fndgot7 dec bc
         ld (txtmulobj+texdatmsg+0),hl
         ld hl,0
         ld (txtmulobj+texdatmsg+2),hl
-        ld a,31
+        ld a,250
         rst #20:dw jmp_keyput   ;set cursor
         jp prgprz0
 
@@ -1611,6 +1625,7 @@ docini2 ld a,l
         jr c,docini3
         cp 128
         jr c,docini4
+jr docini4
 docini3 ld a,"?"
         ld (bc),a
 docini4 inc bc
@@ -1643,7 +1658,7 @@ docrfs  call edtchg1
 ;### DATA AREA ################################################################
 ;==============================================================================
 
-prgdatbeg
+App_BegData
 
 txtbufmem db 0
 ;!!!last label in data-area!!!
@@ -1652,7 +1667,7 @@ txtbufmem db 0
 ;### TRANSFER AREA ############################################################
 ;==============================================================================
 
-prgtrnbeg
+App_BegTrns
 
 prgicn16c db 12,24,24:dw $+7:dw $+4,12*24:db 5
 db #88,#88,#88,#88,#DD,#8D,#D8,#DD,#8D,#D8,#DD,#88,#88,#88,#88,#8D,#8D,#D8,#DD,#8D,#D8,#DD,#8D,#D8,#88,#88,#88,#54,#D4,#4D,#44,#D4,#4D,#44,#D4,#77,#88,#88,#88,#54,#44,#44,#44,#44,#44,#44,#44,#77
@@ -1667,68 +1682,47 @@ db #88,#88,#88,#70,#00,#00,#00,#00,#00,#66,#66,#17,#88,#88,#88,#76,#66,#66,#66,#
 prgstk  ds 6*2
         dw prgprz
 AppPrzN db 0
-AppMsgB ds 14
+App_MsgBuf ds 14
 
 docmsk  db "TXT",0
 docpth  ds 256
+
+;==============================================================================
+;%%% MULTI LANGUAGE TEXTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;==============================================================================
+
+texts_int
+read"App-Notepad-texts.asm"
+texts_int_end
+
+list
+texts_int_len   equ texts_int_end-texts_int
+nolist
 
 ;### STRINGS ##################################################################
 
 prgwintit   db "untitled - Notepad",0:ds 12-8
 prgwinsta   ds 4*11
 
-prgtxtinf1  db "Notepad for SymbOS",0
 prgtxtinf2 db " Version 1.3 (Build "
 read "..\..\..\SRC-Main\build.asm"
            db "pdt)",0
-prgtxtinf3  db " Copyright <c> 2023 SymbiosiS"
 prgtxtinf0  db 0
 
-prgtxterra  db "Textbuffer full. Only a part of",0
-prgtxterrb  db "the document has been loaded.",0
-prgtxterrc  db "Error while loading file!",0
-prgtxterrd  db "Error while saving file!",0
-prgtxterre  db "Device full. Only a part of",0
-prgtxterrf  db "the document has been saved.",0
-
-prgtxtsav1  db "Save changes?",0
-
-prgtxtoky   db "Ok",0
-prgtxtcnc   db "Cancel",0
-prgtxtfnx   db "Find next",0
-prgtxtfrp   db "Replace",0
-prgtxtfra   db "Replace all",0
 
 ;### FIND AND REPLACE #########################################################
 
-fndwintit   db "Find",0
-repwintit   db "Replace",0
-gotwintit   db "Go to",0
-
-fndwintxt1  db "Find what",0
-fndwintxt2  db "Replace with",0
-fndwintxt3  db "Match case",0
-fndwintxt4  db "Whole word only",0
-fndwintxt5  db "Entire document",0
-fndwintxt6  db "Line",0
-fndwintxt7  db "Column",0
 
 fnddattfn   ds 33
 fnddattrp   ds 33
 gotdattln   db "1":ds 4
 gotdattcl   db "1":ds 5
 
-fndmsgtxt1  db "Text not found!",0
 fndmsgtxt2a db "Replaced "
 fndmsgtxt2b ds 8+5
 fndmsgtxt2c db " times.",0
-fndmsgtxt3a db "Textbuffer full. Couldn't",0
-fndmsgtxt3b db "replace one or more entries.",0
-fndmsgtxt4  db "Invalid number",0
 
 ;### CONFIG ###################################################################
-
-fnttxtdef   db "Default",0
 
 coltxt00    db "00",0
 coltxt01    db "01",0
@@ -1747,51 +1741,6 @@ coltxt13    db "13",0
 coltxt14    db "14",0
 coltxt15    db "15",0
 
-cfgwintit   db "Settings",0
-cfgwintxt0  db "Font type",0
-cfgwintxt1  db "Font colour",0
-cfgwintxt2  db "Options",0
-cfgwintxt3  db "Word wrap at window border",0
-cfgwintxt4  db "Word wrap at",0
-cfgwintxt5  db "px",0
-cfgwintxt6  db "No word wrap",0
-cfgwintxt7  db "Tabstop width",0
-cfgwintxt8  db "chars",0
-cfgwintxt9  db "Pen",0
-cfgwintxta  db "Paper",0
-cfgwintxtb  db "Preview",0
-
-;### MENU #####################################################################
-
-prgwinmentx1 db "File",0
-prgwinmen1tx1 db "New",0
-prgwinmen1tx2 db "Open...",0
-prgwinmen1tx3 db "Save",0
-prgwinmen1tx4 db "Save As...",0
-prgwinmen1tx5 db "Exit",0
-
-prgwinmentx2 db "Edit",0
-prgwinmen2tx1 db "Cut",0
-prgwinmen2tx2 db "Copy",0
-prgwinmen2tx3 db "Paste",0
-prgwinmen2tx4 db "Delete",0
-prgwinmen2tx5 db "Find...",0
-prgwinmen2tx6 db "Find Again",0
-prgwinmen2tx7 db "Replace...",0
-prgwinmen2tx8 db "Go To...",0
-prgwinmen2tx9 db "Select All",0
-prgwinmen2txa db "Time/Date",0
-
-prgwinmentx3 db "Format",0
-prgwinmen3tx1 db "Auto word wrap",0
-prgwinmen3tx2 db "Settings...",0
-
-prgwinmentx4 db "View",0
-prgwinmen4tx1 db "Status bar",0
-
-prgwinmentx5 db "?",0
-prgwinmen5tx1 db "Index",0
-prgwinmen5tx2 db "About Notepad...",0
 
 ;### ALERT BOXES ##############################################################
 
@@ -1961,12 +1910,12 @@ prgwindat dw #7701,3,50,20,200,106,0,0,200,106,100,50,10000,10000,prgicnsml,prgw
 prgwindat0 dw prgwinsta,prgwinmen,prgwingrp,0,0:ds 136+14
 
 prgwinmen  dw  5, 1+4,prgwinmentx1,prgwinmen1,0, 1+4,prgwinmentx2,prgwinmen2,0, 1+4,prgwinmentx3,prgwinmen3,0, 1+4,prgwinmentx4,prgwinmen4,0, 1+4,prgwinmentx5,prgwinmen5,0
-prgwinmen1 dw  6, 1,prgwinmen1tx1,filnew,0, 1,prgwinmen1tx2,filopn,0, 1,prgwinmen1tx3,filsav,0, 1,prgwinmen1tx4,filsas,0, 1+8,0,0,0, 1,prgwinmen1tx5,prgend0,0
-prgwinmen2 dw 12, 1,prgwinmen2tx1,edtcut,0, 1,prgwinmen2tx2,edtcop,0, 1,prgwinmen2tx3,edtpas,0, 1,prgwinmen2tx4,edtdel,0, 1+8,0,0,0,                1,prgwinmen2tx5,fndfnd,0
-           dw     1,prgwinmen2tx6,fndfnx,0, 1,prgwinmen2tx7,fndrep,0, 1,prgwinmen2tx8,edtgot,0, 1+8,0,0,0,                1,prgwinmen2tx9,edtsal,0, 1,prgwinmen2txa,edttim,0
-prgwinmen3 dw  2, 1,prgwinmen3tx1,cfgwrp,0, 1,prgwinmen3tx2,cfgopn,0
-prgwinmen4 dw  1, 1,prgwinmen4tx1,cfgbar,0
-prgwinmen5 dw  3, 1,prgwinmen5tx1,prghlp,0, 1+8,0,0,0, 1,prgwinmen5tx2,prginf,0
+prgwinmen1 dw  6, 1,prgwinmen1tx1_poi,filnew,0, 1,prgwinmen1tx2_poi,filopn,0, 1,prgwinmen1tx3_poi,filsav,0, 1,prgwinmen1tx4_poi,filsas,0, 1+8,0,0,0, 1,prgwinmen1tx5_poi,prgend0,0
+prgwinmen2 dw 12, 1,prgwinmen2tx1_poi,edtcut,0, 1,prgwinmen2tx2_poi,edtcop,0, 1,prgwinmen2tx3_poi,edtpas,0, 1,prgwinmen2tx4_poi,edtdel,0, 1+8,0,0,0,                1,prgwinmen2tx5_poi,fndfnd,0
+           dw     1,prgwinmen2tx6_poi,fndfnx,0, 1,prgwinmen2tx7_poi,fndrep,0, 1,prgwinmen2tx8_poi,edtgot,0, 1+8,0,0,0,                1,prgwinmen2tx9_poi,edtsal,0, 1,prgwinmen2txa_poi,edttim,0
+prgwinmen3 dw  2, 1,prgwinmen3tx1_poi,cfgwrp,0, 1,prgwinmen3tx2_poi,cfgopn,0
+prgwinmen4 dw  1, 1,prgwinmen4tx1_poi,cfgbar,0
+prgwinmen5 dw  3, 1,prgwinmen5tx1_poi,prghlp,0, 1+8,0,0,0, 1,prgwinmen5tx2_poi,prginf,0
 
 prgwingrp db 2,0:dw prgwinobj,prgwinclc,0,256*0+0,0,0,2
 prgwinobj
@@ -2009,4 +1958,4 @@ txtmulobj   dw txtbufmem    ;texdatadr       equ 0           ;Zeiger auf Text
             db 0            ;texdatlln       equ 48          ;Zeilen-Längentabelle (bit15=cr+lf am ende vorhanden, wird mitgezählt)
 ;!!!last line in transfer-area!!!
 
-prgtrnend
+App_EndTrns

@@ -139,7 +139,7 @@ SyDesktop_SendMessage
 ;*** Description    Sends a message to the desktop manager, which includes the
 ;***                window ID and additional parameters
 ;******************************************************************************
-        ld iy,AppMsgB
+        ld iy,App_MsgBuf
         ld (iy+0),c
         ld (iy+1),a
         ld (iy+2),e
@@ -162,7 +162,7 @@ SyDesktop_WaitMessage
 ;*** Description    Sends a message to the desktop manager, which includes the
 ;***                window ID and additional parameters
 ;******************************************************************************
-        ld iy,AppMsgB
+        ld iy,App_MsgBuf
 SyDWMs1 db #dd:ld h,2       ;2 is the number of the desktop manager process
         ld a,(AppPrzN)
         db #dd:ld l,a
@@ -206,8 +206,8 @@ SySystem_PRGRUN
 SySPRn1 call SySystem_WaitMessage
         cp MSR_SYS_PRGRUN
         jr nz,SySPRn1
-        ld a,(AppMsgB+1)
-        ld hl,(AppMsgB+8)
+        ld a,(App_MsgBuf+1)
+        ld hl,(App_MsgBuf+8)
         ret
 
 SySystem_PRGEND
@@ -307,12 +307,12 @@ SySWrn1 call SySystem_WaitMessage
         jr z,SySWrn2
         ld (ix+51),c
         inc c
-SySWrn2 ld a,(AppMsgB+1)
+SySWrn2 ld a,(App_MsgBuf+1)
         cp 1
         ret nz
         dec c
         jr nz,SySWrn1
-        ld a,(AppMsgB+2)
+        ld a,(App_MsgBuf+2)
         ld (ix+51),a
         jr SySWrn1
 SySWrnW dw 0
@@ -379,7 +379,7 @@ SySystem_SELOPN
 ;******************************************************************************
         ld (SySSOpW),de
         push iy
-        ld iy,AppMsgB
+        ld iy,App_MsgBuf
         ld (iy+6),a
         ld (iy+7),c
         ld (iy+8),l
@@ -406,6 +406,41 @@ SySSOp1 call SySystem_WaitMessage
         jr SySSOp1
 SySSOpW dw 0
 
+SySystem_LNGLOD
+;******************************************************************************
+;*** Name           Language_Load_Command
+;*** Input          P10 / IXL=application's default language ID
+;***                P11 / IXH=pack
+;***                P12 / IYL=version
+;***                P6  / A  =path bank
+;***                P4  / DE =path address
+;***                P7  / C  =text bank
+;***                P8  / HL =text address
+;*** Output         A  = Success status
+;***                     0 -> service not available
+;***                     1 -> OK, the required language package has either been
+;***                          loaded successfully, or the application's default
+;***                          language matches the required language
+;***                     2 -> disc error
+;***                     3 -> wrong version or pack number too high
+;***                     4 -> language not available
+;*** Destroyed      F,BC,DE,HL,IX,IY
+;*** Description    ...
+;******************************************************************************
+        call SySSMg1
+        ld a,(App_BnkNum)
+        ld iyh,a
+        ld c,MSC_SYS_EXTFNC
+        ld l,FNC_DXT_LNGLOD
+        call SySystem_SendMessage
+SySLLo1 call SySystem_WaitMessage
+        cp MSR_SYS_EXTFNC
+        jr nz,SySLLo1
+        ld a,(App_MsgBuf+1)
+        ret
+
+
+
 SySystem_SendMessage
 ;******************************************************************************
 ;*** Input          C       = Command
@@ -414,17 +449,21 @@ SySystem_SendMessage
 ;*** Destroyed      AF,BC,DE,HL,IX,IY
 ;*** Description    Sends a message to the system manager
 ;******************************************************************************
-        ld iy,AppMsgB
+        ld iy,App_MsgBuf
         ld (iy+0),c
-        ld (iy+1),l
-        ld (iy+2),h
-        ld (iy+3),a
-        ld (iy+4),e
-        ld (iy+5),d
+        ld (App_MsgBuf+1),hl
+        ld (App_MsgBuf+3),a
+        ld (App_MsgBuf+4),de
         db #dd:ld h,3       ;3 is the number of the system manager process
         ld a,(AppPrzN)
         db #dd:ld l,a
         rst #10
+        ret
+SySSMg1 ld (App_MsgBuf+6),a
+        ld (App_MsgBuf+7),bc
+        ld (App_MsgBuf+8),hl
+        ld (App_MsgBuf+10),ix
+        ld (App_MsgBuf+12),iy
         ret
 
 SySystem_WaitMessage
@@ -436,7 +475,7 @@ SySystem_WaitMessage
 ;*** Description    Sends a message to the desktop manager, which includes the
 ;***                window ID and additional parameters
 ;******************************************************************************
-        ld iy,AppMsgB
+        ld iy,App_MsgBuf
 SySWMs1 db #dd:ld h,3       ;3 is the number of the system manager process
         ld a,(AppPrzN)
         db #dd:ld l,a
@@ -457,31 +496,31 @@ SySystem_CallFunction
 ;*** Description    Calls a function via the system manager. This function is
 ;***                needed to have access to the file manager.
 ;******************************************************************************
-        ld (AppMsgB+04),bc      ;copy registers into the message buffer
-        ld (AppMsgB+06),de
-        ld (AppMsgB+08),hl
-        ld (AppMsgB+10),ix
-        ld (AppMsgB+12),iy
+        ld (App_MsgBuf+04),bc      ;copy registers into the message buffer
+        ld (App_MsgBuf+06),de
+        ld (App_MsgBuf+08),hl
+        ld (App_MsgBuf+10),ix
+        ld (App_MsgBuf+12),iy
         push af
         pop hl
-        ld (AppMsgB+02),hl
+        ld (App_MsgBuf+02),hl
         pop hl
         ld e,(hl)
         inc hl
         ld d,(hl)
         inc hl
         push hl
-        ld (AppMsgB+00),de      ;module und funktion number
+        ld (App_MsgBuf+00),de      ;module und funktion number
         ld a,e
         ld (SyCallN),a
-        ld iy,AppMsgB
+        ld iy,App_MsgBuf
         ld a,(AppPrzN)
         db #dd:ld l,a
         ld a,3
         db #dd:ld h,a
         rst #10                 ;send message
 SyCall1 rst #30
-        ld iy,AppMsgB
+        ld iy,App_MsgBuf
         ld a,(AppPrzN)
         db #dd:ld l,a
         ld a,3
@@ -489,19 +528,19 @@ SyCall1 rst #30
         rst #18                 ;wait for answer
         db #dd:dec l
         jr nz,SyCall1
-        ld a,(AppMsgB)
+        ld a,(App_MsgBuf)
         sub 128
         ld e,a
         ld a,(SyCallN)
         cp e
         jr nz,SyCall1
-        ld hl,(AppMsgB+02)      ;get registers out of the message buffer
+        ld hl,(App_MsgBuf+02)      ;get registers out of the message buffer
         push hl
         pop af
-        ld bc,(AppMsgB+04)
-        ld de,(AppMsgB+06)
-        ld hl,(AppMsgB+08)
-        ld ix,(AppMsgB+10)
-        ld iy,(AppMsgB+12)
+        ld bc,(App_MsgBuf+04)
+        ld de,(App_MsgBuf+06)
+        ld hl,(App_MsgBuf+08)
+        ld ix,(App_MsgBuf+10)
+        ld iy,(App_MsgBuf+12)
         ret
 SyCallN db 0

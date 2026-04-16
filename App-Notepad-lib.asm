@@ -544,3 +544,36 @@ SyCall1 rst #30
         ld iy,(App_MsgBuf+12)
         ret
 SyCallN db 0
+
+;******************************************************************************
+;*** Name           Macro_APPINI
+;*** Input          0/main window data record
+;***                0/default path
+;*** Destroyed      AF,BC,DE,HL
+;*** Description    ...
+;******************************************************************************
+macro SyMacro_APPINI window_record, startin_path
+    if "window_record" = "0"
+    else
+        ld hl,window_record
+        ld a,(App_BegCode+47)
+        or a
+        jr z,@appini1
+        ld (hl),a
+        @appini1
+    endif
+    if "startin_path" = "0"
+    else
+        ld a,(App_BegCode+46)
+        bit 0,a
+        jr z,@appini2
+        ld hl,(App_BegCode)
+        ld bc,App_BegCode
+        add hl,bc
+        ld bc,128
+        sbc hl,bc
+        ld de,startin_path
+        ldir
+        @appini2
+    endif
+mend

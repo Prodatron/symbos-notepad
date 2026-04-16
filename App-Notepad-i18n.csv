@@ -1,5 +1,5 @@
 labels,ENG,DEU,NLD,JPN
-### pack0,68,1167
+### pack0,66,1143
 prgtxtoky,Ok,Ok,Ok,オーケー
 prgtxtcnc,Cancel,Abbruch,Annuleren,キャンセル
 prgtxtfnx,Find next,Suchen,Volgende zoeken,ファインド ネクスト
@@ -7,7 +7,7 @@ prgtxtfrp,Replace,Ersetzen,Vervangen,リプレイス
 prgtxtfra,Replace all,Alle ersetz.,Alles vervangen,リプレイス オール
 prgtxtinf1,Notepad for SymbOS,Notepad für SymbOS,Notepad voor SymbOS,ワードパッド for SymbOS
 prgtxtinf3, Copyright <c> 2025 SymbiosiS, Copyright <c> 2025 SymbiosiS,Copyright <c> 2025 SymbiosiS,コピーライト <c> ２０２５ SymbiosiS
-_edtchgm,Lin Col Siz Mrk ,#TRANSLATE#,#TRANSLATE#,#TRANSLATE#
+_edtchgm,Lin Col Siz Mrk ,Zei Spa Grö Mrk ,Reg Kol Gro Mkr ,リン コル シズ マーク 
 prgtxterra,Textbuffer full. Only a part of,Textspeicher voll. Nur ein,Tekstbuffer vol. Slechts een deel van,テキストバッファー が いっぱい です。
 prgtxterrb,the document has been loaded.,Teil konnte geladen werden.,document geladen.,ドキュメント の いちぶ だけ が ロード されました。
 prgtxterrc,Error while loading file!,Fehler beim Laden!,Fout bij laden van bestand!,ファイル ロード エラー！
@@ -15,9 +15,7 @@ prgtxterrd,Error while saving file!,Fehler beim Speichern!,Fout bij opslaan van 
 prgtxterre,Device full. Only a part of,Datenträger voll. Nur ein Teil,Apparaat vol.Slechts een deel van,デバイス が いっぱい です。
 prgtxterrf,the document has been saved.,konnte gespeichert werden.,document opgeslagen.,ドキュメント の いちぶ だけ が セーブ されました。
 prgtxtsav1,Save changes?,Änderungen speichern?,Wijzigingen opslaan?,ヘンこう を セーブ しますか？
-fnttxtdef,Default,Standard,Standaard,デフォルト
 cfgwintit,Settings,Einstellungen,Instellingen,セッティング
-cfgwintxt0,Font type,Schriftart,Lettertype,フォント タイプ
 cfgwintxt1,Font colour,Farben,Letterkleur,フォント カラー
 cfgwintxt2,Options,Optionen,Opties,オプション
 cfgwintxt3,Word wrap at window border,Umbruch am Fensterende,Woordafbreking bij vensterrand,ウィンドウ ボーダー で ワードラップ

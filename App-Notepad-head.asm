@@ -1,6 +1,6 @@
 ;### APPLICATION HEADER #######################################################
 
-txtbufmax   equ 16384-1-1536-2
+txtbufmax   equ 16384-1
 txtlinmax   equ 1000
 
 ;header structure
@@ -50,10 +50,10 @@ App_BnkNum  db 0                    ;*reserved*                         POST ban
             ds 5                    ;*reserved*
 prgmemtab   db "SymExe10"           ;SymbOS-EXE-identifier              POST table reserved memory areas
             dw 0                    ;additional code memory
-            dw txtbufmax+1536+2     ;additional data memory
+            dw txtbufmax            ;additional data memory
             dw txtlinmax*2          ;additional transfer memory
             ds 26                   ;*reserviert*
-            db 0,4                  ;required OS version (4.0)
+            db 1,4                  ;required OS version (4.1)
 
 prgicnsml   db 2,8,8,#31,#F5,#23,#3F,#56,#6E,#47,#6E,#8F,#EA,#FF,#AE,#74,#E2,#77,#EE
 prgicnbig   db 6,24,24

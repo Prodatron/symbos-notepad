@@ -29,9 +29,7 @@ prgtxterrf   db 1:dw prgtxterrf_eng
 prgtxtsav1   db 1:dw prgtxtsav1_eng
 
 ;config
-fnttxtdef   db 1:dw fnttxtdef_eng
 cfgwintit   db 1:dw cfgwintit_eng
-cfgwintxt0   db 1:dw cfgwintxt0_eng
 cfgwintxt1   db 1:dw cfgwintxt1_eng
 cfgwintxt2   db 1:dw cfgwintxt2_eng
 cfgwintxt3   db 1:dw cfgwintxt3_eng
@@ -116,10 +114,7 @@ prgtxterrf_eng   db "the document has been saved.",0
 prgtxtsav1_eng   db "Save changes?",0
 
 ;config
-fnttxtdef_eng   db "Default",0
-
 cfgwintit_eng   db "Settings",0
-cfgwintxt0_eng   db "Font type",0
 cfgwintxt1_eng   db "Font colour",0
 cfgwintxt2_eng   db "Options",0
 cfgwintxt3_eng   db "Word wrap at window border",0

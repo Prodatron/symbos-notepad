@@ -2,7 +2,7 @@
 ;@                                                                            @
 ;@                               N o t e p a d                                @
 ;@                                                                            @
-;@             (c) 2012-2014 by Prodatron / SymbiosiS (Jörn Mika)             @
+;@             (c) 2012-2026 by Prodatron / SymbiosiS (Jörn Mika)             @
 ;@                                                                            @
 ;@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -28,7 +28,6 @@
 ;### CFGGET -> Generates config path
 ;### CFGLOD -> Loads config
 ;### CFGINI -> Initialize config
-;### CFGFNT -> Loads font
 ;### CFGSAV -> Save config
 ;### CFGOPN -> Open config-dialogue
 ;### CFGCOL -> Updates colour preview
@@ -89,7 +88,8 @@ prgwin      db 0    ;main     window ID
 diawin      db 0    ;dialogue window ID
 windatsup   equ 51
 
-prgprz  call prglng
+prgprz  SyMacro_APPINI prgwindat,docpth
+        call prglng
         call prgpar
         call cfglod
         call cfgini
@@ -407,7 +407,7 @@ SySystem_HLPOPN
 ;### CONFIG-ROUTINES ##########################################################
 ;==============================================================================
 
-cfgnam  db "notepad.dat",0:cfgnam0
+cfgnam  db "notepad.ini",0:cfgnam0
 cfgpth  dw 0
 
 ;### CFGGET -> Generates config path
@@ -459,7 +459,7 @@ cfglod  call cfgget
         db FNC_FIL_FILOPN           ;open file
         ret c
         ld hl,cfgdat
-        ld bc,16+128
+        ld bc,16
         ld de,(App_BnkNum)
         push af
         call SySystem_CallFunction
@@ -497,100 +497,12 @@ cfgini0 ld hl,(cfgdatpap)
         res 0,(hl)
         ld a,(cfgdatwrp)
         cp 1
-        jr c,cfgini2
+        ret c
         set 0,(hl)
         ld hl,-1
         jr nz,cfgini1
         ld hl,(cfgdatwps)
 cfgini1 ld (txtmulobj+texdatxmx),hl
-cfgini2 ld a,(cfgfntnum)
-        inc a
-        ld (fntselobj),a
-        dec a
-        jr z,cfgfnt
-        db #fd:ld l,a
-        add a
-        ld l,a
-        ld h,0
-        ld de,cfgfntdat
-        add hl,de
-        ld ix,fntsellst+4
-        xor a
-cfgini3 ld (ix+2),l
-        ld (ix+3),h
-        ld de,4
-        add ix,de
-        ld bc,-1
-        cpir
-        db #fd:dec l
-        jr nz,cfgini3
-        call cfgwrp0
-        jr cfgfnt
-
-;### CFGFNT -> Loads font
-cfgfntl db -1   ;last loaded font
-cfgfnt  ld hl,txtmulobj+texdatflg
-        res 3,(hl)
-        ld a,(cfgdatfnt)
-        or a
-        ret z
-        ld hl,cfgfntl
-        cp (hl)
-        jr z,cfgfnt1
-        push af
-        ld hl,(cfgpth)
-        ld a,(App_BnkNum)
-        db #dd:ld h,a
-        call SySystem_CallFunction
-        db MSC_SYS_SYSFIL
-        db FNC_FIL_FILOPN           ;open file
-        pop bc
-        ret c
-        push af
-        ld c,a
-        ld a,b
-        add a
-        ld l,a
-        ld h,0
-        ld de,cfgfntdat-2
-        add hl,de
-        ld a,(hl):db #dd:ld l,a
-        inc hl
-        ld a,(hl):db #dd:ld h,a
-        ld a,c
-        ld iy,0
-        ld c,0
-        call SySystem_CallFunction
-        db MSC_SYS_SYSFIL
-        db FNC_FIL_FILPOI           ;move to font data
-        pop de
-        jr c,cfgfnt0
-        ld hl,txtbufmem
-        ld bc,txtbufmax+1
-        add hl,bc
-        ld (txtmulobj+texdatfnt),hl
-        ld bc,96*16+2
-        ld a,(App_BnkNum)
-        ld e,a
-        ld a,(cfgfntcpr)
-        rra
-        ld a,d
-        push af
-        call SySystem_CallFunction
-        db MSC_SYS_SYSFIL
-        db FNC_FIL_FILCPR           ;load font
-        pop bc
-        jr c,cfgfnt0
-        call cfgfnt1
-        ld a,(cfgdatfnt)
-        ld (cfgfntl),a
-cfgfnt0 ld a,b
-        call SySystem_CallFunction
-        db MSC_SYS_SYSFIL
-        db FNC_FIL_FILCLO           ;close file
-        ret
-cfgfnt1 ld hl,txtmulobj+texdatflg
-        set 3,(hl)
         ret
 
 ;### CFGSAV -> Save config
@@ -600,7 +512,7 @@ cfgsav  ld hl,(cfgpth)      ;open config file
         xor a
         call SySystem_CallFunction
         db MSC_SYS_SYSFIL
-        db FNC_FIL_FILOPN
+        db FNC_FIL_FILNEW
         ret c
         ld de,(App_BnkNum)   ;save config
         ld hl,cfgdat
@@ -627,20 +539,6 @@ cfgopn  ld a,(cfgdatwrp)
         ld iy,cfgwinbuf2
         ld e,2
         call cfgopn1
-        ld bc,(fntselobj-1)
-        ld hl,fntsellst+1
-        ld de,4
-cfgopn2 res 7,(hl)
-        add hl,de
-        djnz cfgopn2
-        ld a,(cfgdatfnt)
-        ld (fntselobj+12),a
-        add a:add a
-        ld l,a
-        ld h,0
-        ld de,fntsellst+1
-        add hl,de
-        set 7,(hl)
         ld a,(cfgdatpap)
         ld (papselobj+12),a
         ld c,a
@@ -671,7 +569,7 @@ cfgopn1 push iy
 ;### CFGCOL -> Updates colour preview
 cfgcol  call cfgcol0
         ld a,(diawin)
-        ld e,8
+        ld e,cfgwinobj_prv
         call SyDesktop_WINDIN
         jp prgprz0
 cfgcol0 ld a,(penselobj+12)
@@ -699,9 +597,7 @@ cfgoky1 ld ix,cfgwinbuf2
         jr c,cfgoky1
         ld a,l
         ld (cfgdattab),a
-cfgoky2 ld a,(fntselobj+12)
-        ld (cfgdatfnt),a
-        ld a,(papselobj+12)
+cfgoky2 ld a,(papselobj+12)
         ld (cfgdatpap),a
         ld a,(penselobj+12)
         ld (cfgdatpen),a
@@ -1625,7 +1521,6 @@ docini2 ld a,l
         jr c,docini3
         cp 128
         jr c,docini4
-jr docini4
 docini3 ld a,"?"
         ld (bc),a
 docini4 inc bc
@@ -1692,7 +1587,7 @@ docpth  ds 256
 ;==============================================================================
 
 texts_int
-read"App-Notepad-texts.asm"
+read"App-Notepad-i18n.asm"
 texts_int_end
 
 list
@@ -1760,36 +1655,28 @@ prgtxtnum   dw fndmsgtxt4,4*1+2,prgtxtinf0,4*1+2,prgtxtinf0,4*1+2
 
 ;### CONFIG WINDOW ############################################################
 
-cfgwindat   dw #1401,4+16,079,024,160,138,0,0,160,138,160,138,160,138,0,cfgwintit,0,0,cfgwingrp,0,0:ds 136+14
-cfgwingrp   db 20,0:dw cfgwinobj,0,0,256*20+19,0,0,0
+cfgwindat   dw #1401,4+16,079,024,160,118,0,0,160,118,160,118,160,118,0,cfgwintit,0,0,cfgwingrp,0,0:ds 136+14
+cfgwingrp   db 18,0:dw cfgwinobj,0,0,256*20+19,0,0,0
 cfgwinobj
 dw     00,         0,2,          0,0,1000,1000,0        ;00=Hintergrund
-dw     00,255*256+ 3,cfgwindsc0, 00, 01, 80,59,0        ;01=Frame       "Font type"
-dw     00,255*256+41,fntselobj,  08, 10, 64,42,0        ;02=Font-List
-dw     00,255*256+ 3,cfgwindsc1, 80, 01, 80,59,0        ;03=Frame       "Font colour"
-dw     00,255*256+ 1,cfgwindsc6, 88, 12, 32, 8,0        ;04=Description "Pen"
-dw cfgcol,255*256+42,penselobj, 120, 11, 32,10,0        ;05=Pen-List
-dw     00,255*256+ 1,cfgwindsc7, 88, 24, 32, 8,0        ;06=Description "Paper"
-dw cfgcol,255*256+42,papselobj, 120, 23, 32,10,0        ;07=Paper-List
-dw     00,255*256+ 1,cfgwindsc8, 92, 40, 56, 8,0        ;08=Description "Preview"
-dw     00,255*256+ 3,cfgwindsc2, 00, 60,160,63,0        ;09=Frame       "Options"
-dw     00,255*256+18,cfgwinrad0, 08, 70,120, 8,0        ;10=Radiobox    "Word wrap at window border"
-dw     00,255*256+18,cfgwinrad1, 08, 81, 64, 8,0        ;11=Radiobox    "Word wrap at"
-dw     00,255*256+32,cfgwininp1, 73, 79, 26,12,0        ;12=Input       "Word wrap at"
-dw     00,255*256+ 1,cfgwindsc4,101, 81, 32, 8,0        ;13=Description "px"
-dw     00,255*256+18,cfgwinrad2, 08, 92, 64, 8,0        ;14=Radiobox    "No word wrap"
-dw     00,255*256+ 1,cfgwindsc3, 08,106, 32, 8,0        ;15=Description "Tab stop width"
-dw     00,255*256+32,cfgwininp2, 68,104, 16,12,0        ;16=Input       "Tab stop width"
-dw     00,255*256+ 1,cfgwindsc5, 86,106, 32, 8,0        ;17=Description "chars"
-dw cfgoky,255*256+16,prgtxtoky,  59,123, 48,12,0        ;18="Ok"    -Button
-dw diacnc,255*256+16,prgtxtcnc, 109,123, 48,12,0        ;19="Cancel"-Button
-
-
-fntselobj   dw 8,0,fntsellst,0,1,fntselrow,0,1
-fntselrow   dw 0,56,0,0
-fntsellst   dw 00,fnttxtdef
-            dw 01,fnttxtdef, 02,fnttxtdef, 03,fnttxtdef, 04,fnttxtdef, 05,fnttxtdef, 06,fnttxtdef, 07,fnttxtdef, 08,fnttxtdef
-            dw 09,fnttxtdef, 10,fnttxtdef, 11,fnttxtdef, 12,fnttxtdef, 13,fnttxtdef, 14,fnttxtdef, 15,fnttxtdef, 16,fnttxtdef
+dw     00,255*256+ 3,cfgwindsc1, 00, 01,160,39,0        ;01=Frame       "Font colour"
+dw     00,255*256+ 1,cfgwindsc6, 08, 12, 32, 8,0        ;02=Description "Pen"
+dw cfgcol,255*256+42,penselobj,  40, 11, 32,10,0        ;03=Pen-List
+dw     00,255*256+ 1,cfgwindsc7, 08, 24, 32, 8,0        ;04=Description "Paper"
+dw cfgcol,255*256+42,papselobj,  40, 23, 32,10,0        ;05=Paper-List
+cfgwinobj_prv   equ 6
+dw     00,255*256+ 1,cfgwindsc8, 92, 12, 56, 8,0        ;06=Description "Preview"
+dw     00,255*256+ 3,cfgwindsc2, 00, 40,160,63,0        ;07=Frame       "Options"
+dw     00,255*256+18,cfgwinrad0, 08, 50,120, 8,0        ;08=Radiobox    "Word wrap at window border"
+dw     00,255*256+18,cfgwinrad1, 08, 61, 64, 8,0        ;09=Radiobox    "Word wrap at"
+dw     00,255*256+32,cfgwininp1, 73, 59, 26,12,0        ;10=Input       "Word wrap at"
+dw     00,255*256+ 1,cfgwindsc4,101, 61, 32, 8,0        ;11=Description "px"
+dw     00,255*256+18,cfgwinrad2, 08, 72, 64, 8,0        ;12=Radiobox    "No word wrap"
+dw     00,255*256+ 1,cfgwindsc3, 08, 86, 32, 8,0        ;13=Description "Tab stop width"
+dw     00,255*256+32,cfgwininp2, 68, 84, 16,12,0        ;14=Input       "Tab stop width"
+dw     00,255*256+ 1,cfgwindsc5, 86, 86, 32, 8,0        ;15=Description "chars"
+dw cfgoky,255*256+16,prgtxtoky,  59,103, 48,12,0        ;16="Ok"    -Button
+dw diacnc,255*256+16,prgtxtcnc, 109,103, 48,12,0        ;17="Cancel"-Button
 
 penselobj   dw 16,0,pensellst,0,1,penselrow,0,1
 penselrow   dw 0,56,0,0
@@ -1801,7 +1688,6 @@ papselrow   dw 0,56,0,0
 papsellst   dw 00,coltxt00, 01,coltxt01, 02,coltxt02, 03,coltxt03, 04,coltxt04, 05,coltxt05, 06,coltxt06, 07,coltxt07
             dw 08,coltxt08, 09,coltxt09, 10,coltxt10, 11,coltxt11, 12,coltxt12, 13,coltxt13, 14,coltxt14, 15,coltxt15
 
-cfgwindsc0  dw cfgwintxt0,2+4
 cfgwindsc1  dw cfgwintxt1,2+4
 cfgwindsc2  dw cfgwintxt2,2+4
 cfgwindsc3  dw cfgwintxt7,2+4
@@ -1825,16 +1711,12 @@ cfgwinrad2  dw cfgwinwrp,cfgwintxt6,256*2+2+4,cfgwinradb
 cfgdat
 cfgdatpap   db 0    ;paper
 cfgdatpen   db 1    ;pen
-cfgdatfnt   db 0    ;font 
+cfgdatres   db 0    ;*reserved*
 cfgdatwrp   db 0    ;0=autowordwrap, 1=wordwrap at position x, 2=no wordwrap
 cfgdatwps   dw 200  ;wordwrap-position (pixels)
 cfgdattab   db 8    ;tabstop-position (chars)
 cfgdatsta   db 1    ;flag, if statusbar
             ds 16-8
-
-cfgfntnum   db 0    ;number of fonts
-cfgfntdat   ds 126  ;font information (offset table, names)
-cfgfntcpr   db 0    ;flag, if fonts compressed (0=no, 1=yes)
 
 ;### GOTO #####################################################################
 
